@@ -1,0 +1,67 @@
+
+// This project compiles maven-standard folder structures into handy ear files!
+
+project(':web') {
+	apply plugin: 'java'
+	apply plugin: 'war'
+
+	// optional default source file encoding:
+	// compileJava.options.encoding = 'windows-1252'
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
+
+	repositories {
+		mavenCentral()
+	}
+
+	dependencies {
+		// provide compile-time javaee & eclipselink api:
+		compileOnly 'javax:javaee-api:7.0'
+		compileOnly 'org.eclipse.persistence:eclipselink:2.7.6'
+
+		// other dependencies:
+		implementation 'org.slf4j:slf4j-api:1.7.30'
+
+
+		// for testing purposes:
+		testImplementation 'javax:javaee-api:7.0'
+		testImplementation 'org.eclipse.persistence:eclipselink:2.7.6'
+		
+		testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
+		testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+		
+		testImplementation 'org.mockito:mockito-junit-jupiter:3.2.4'
+		testImplementation 'org.mockito:mockito-core:2.22.0'
+	}
+	
+	// Copy non-java files from source folder as resource as well.
+	// (Purely optional & probably not a good practise, yet convenient):
+	sourceSets.main.resources.srcDirs += sourceSets.main.java.srcDirs
+	
+	test {
+		useJUnitPlatform()
+	}
+}
+
+project(':ear') {
+	apply plugin: 'ear'
+
+	// Depend on building :web
+	dependencies {
+		deploy project(path: ':web', configuration: 'archives')
+	}
+
+	ear {
+		archiveFileName = 'myapp.ear' // override target ear filename
+
+		// override some application.xml defaults:
+		deploymentDescriptor {
+			displayName = 'My App'
+
+			// override context root
+			webModule(project(':web').configurations['archives'].artifacts[0].file.name, 'APP_CONTEXT_ROOT')
+			// specify security roles
+			securityRole 'admin'
+		}
+	}
+}
